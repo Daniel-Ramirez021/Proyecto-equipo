@@ -1,192 +1,152 @@
-class Estudiante:
-    def __init__(self, codigo, nombre):
-        self.codigo = codigo
-        self.nombre = nombre
 
-    def __str__(self):
-        return f"Codigo: {self.codigo} | Nombre: {self.nombre}"
+from datos import cargar_datos, guardar_datos, validar_codigo
 
 
-class Profesor:
-    def __init__(self, codigo, nombre):
-        self.codigo = codigo
-        self.nombre = nombre
+def registrar_curso():
+    datos = cargar_datos()
 
-    def __str__(self):
-        return f"Codigo: {self.codigo} | Nombre: {self.nombre}"
+    print("\n--- REGISTRAR CURSO ---")
 
+    codigo = input("Código del curso: ").strip().upper()
 
-class Curso:
-    def __init__(self, codigo, nombre, profesor):
-        self.codigo = codigo
-        self.nombre = nombre
-        self.profesor = profesor
-        self.estudiantes_inscritos = {}
+    if not validar_codigo(codigo):
+        print("Error: código inválido.")
+        return
 
-    def __str__(self):
-        return f"Curso: [{self.codigo}] {self.nombre} | Profesor: {self.profesor.nombre} | Inscritos: {len(self.estudiantes_inscritos)}"
+    if codigo in datos["cursos"]:
+        print("Error: el curso ya existe.")
+        return
 
+    nombre = input("Nombre del curso: ").strip()
 
-class SistemaCursos:
-    def __init__(self):
-        self.estudiantes = {}
-        self.profesores = {}
-        self.cursos = {}
-        self.precargar_datos()
+    if not nombre or not any(c.isalpha() for c in nombre):
+        print("Error: nombre inválido.")
+        return
 
-    def precargar_datos(self):
-        self.estudiantes["101"] = Estudiante("101", "Ana Perez")
-        self.estudiantes["102"] = Estudiante("102", "Carlos Gomez")
-        self.estudiantes["103"] = Estudiante("103", "Maria Rodriguez")
+    datos["cursos"][codigo] = {
+        "nombre": nombre,
+        "profesor": None
+    }
 
-        self.profesores["201"] = Profesor("201", "Martinez")
-        self.profesores["202"] = Profesor("202", "Fernandez")
-
-        self.cursos["301"] = Curso("301", "Matematicas", self.profesores["201"])
-        self.cursos["302"] = Curso("302", "Historia", self.profesores["202"])
-
-    def codigo_existe_general(self, codigo):
-        return codigo in self.estudiantes or codigo in self.profesores or codigo in self.cursos
-
-    def registrar_curso(self, codigo_curso, nombre_curso, codigo_profesor):
-        if self.codigo_existe_general(codigo_curso):
-            return "Error: El codigo del curso ya existe en el sistema."
-        if codigo_profesor not in self.profesores:
-            return "Error: El profesor responsable no esta registrado en el sistema."
-
-        nombre_normalizado = nombre_curso.strip().title()
-        for curso in self.cursos.values():
-            if curso.nombre == nombre_normalizado:
-                return "Error: Ya existe un curso registrado con este mismo nombre."
-
-        profesor = self.profesores[codigo_profesor]
-        self.cursos[codigo_curso] = Curso(codigo_curso, nombre_normalizado, profesor)
-        return f"Curso '{nombre_normalizado}' registrado y asignado al profesor {profesor.nombre} con exito."
-
-    def inscribir_estudiante(self, codigo_estudiante, codigo_curso):
-        if codigo_estudiante not in self.estudiantes:
-            return "Error: El estudiante no esta registrado en el sistema."
-        if codigo_curso not in self.cursos:
-            return "Error: El curso no existe en el sistema."
-
-        curso = self.cursos[codigo_curso]
-        estudiante = self.estudiantes[codigo_estudiante]
-
-        if codigo_estudiante in curso.estudiantes_inscritos:
-            return f"Error: El estudiante '{estudiante.nombre}' ya se encuentra inscrito en el curso '{curso.nombre}'."
-
-        curso.estudiantes_inscritos[codigo_estudiante] = estudiante
-        return f"Estudiante '{estudiante.nombre}' inscrito correctamente en el curso '{curso.nombre}'."
-
-    def consultar_cursos_de_estudiante(self, codigo_estudiante):
-        if codigo_estudiante not in self.estudiantes:
-            return "Error: El estudiante no existe en el sistema."
-
-        estudiante = self.estudiantes[codigo_estudiante]
-        cursos_encontrados = [c for c in self.cursos.values() if codigo_estudiante in c.estudiantes_inscritos]
-
-        if not cursos_encontrados:
-            return f"El estudiante {estudiante.nombre} no esta inscrito en ningun curso."
-
-        resultado = f"\n--- Cursos de {estudiante.nombre} ---\n"
-        for c in cursos_encontrados:
-            resultado += f"- [{c.codigo}] {c.nombre} (Prof. {c.profesor.nombre})\n"
-        return resultado
-
-    def consultar_estudiantes_de_curso(self, codigo_curso):
-        if codigo_curso not in self.cursos:
-            return "Error: El curso no existe en el sistema."
-
-        curso = self.cursos[codigo_curso]
-        if not curso.estudiantes_inscritos:
-            return f"El curso '{curso.nombre}' no tiene estudiantes inscritos actualmente."
-
-        resultado = f"\n--- Estudiantes inscritos en {curso.nombre} ---\n"
-        for est in curso.estudiantes_inscritos.values():
-            resultado += f"- {est}\n"
-        return resultado
+    guardar_datos(datos)
+    print("Curso registrado correctamente.")
+    print("Recuerde asignarle un profesor.")
 
 
-def pedir_codigo(mensaje):
-    while True:
-        codigo = input(mensaje).strip()
-        if not codigo:
-            print("Error: El campo no puede estar vacio.")
-            continue
-        if any(c.isalpha() or c.isspace() or not c.isalnum() for c in codigo):
-            print("Error: Los codigos no pueden contener letras, espacios ni simbolos, unicamente numeros.")
-            continue
-        return codigo
+def asignar_profesor():
+    datos = cargar_datos()
+
+    print("\n--- ASIGNAR PROFESOR ---")
+
+    curso = input("Código del curso: ").strip().upper()
+    profesor = input("Código del profesor: ").strip().upper()
+
+    if curso not in datos["cursos"]:
+        print("Error: el curso no existe.")
+        return
+
+    if profesor not in datos["profesores"]:
+        print("Error: el profesor no existe.")
+        return
+
+    actual = datos["cursos"][curso]["profesor"]
+
+    if actual == profesor:
+        print("Este profesor ya está asignado.")
+        return
+
+    datos["cursos"][curso]["profesor"] = profesor
+
+    guardar_datos(datos)
+    print("Profesor asignado correctamente.")
 
 
-def pedir_texto(mensaje):
-    while True:
-        texto = input(mensaje).strip()
-        if not texto:
-            print("Error: El campo no puede estar vacio.")
-            continue
-        if any(c.isdigit() for c in texto):
-            print("Error: Este campo no puede contener numeros.")
-            continue
-        if not all(x.isalpha() or x.isspace() for x in texto):
-            print("Error: Este campo solo debe contener letras (sin simbolos especiales).")
-            continue
-        return texto
+def inscribir_estudiante():
+    datos = cargar_datos()
+
+    print("\n--- INSCRIBIR ESTUDIANTE ---")
+
+    estudiante = input("Código del estudiante: ").strip().upper()
+    curso = input("Código del curso: ").strip().upper()
+
+    if estudiante not in datos["estudiantes"]:
+        print("Error: el estudiante no existe.")
+        return
+
+    if curso not in datos["cursos"]:
+        print("Error: el curso no existe.")
+        return
+
+    if datos["cursos"][curso]["profesor"] is None:
+        print("Error: primero debe asignar un profesor.")
+        return
+
+    for inscripcion in datos["inscripciones"]:
+        if (inscripcion["estudiante"] == estudiante
+                and inscripcion["curso"] == curso):
+            print("Error: el estudiante ya está inscrito.")
+            return
+
+    datos["inscripciones"].append({
+        "estudiante": estudiante,
+        "curso": curso
+    })
+
+    guardar_datos(datos)
+    print("Inscripción realizada correctamente.")
 
 
-def pausar():
-    input("\nPresione Enter para continuar...")
+def consultar_cursos_estudiante():
+    datos = cargar_datos()
+
+    print("\n--- CURSOS DE UN ESTUDIANTE ---")
+
+    estudiante = input("Código del estudiante: ").strip().upper()
+
+    if estudiante not in datos["estudiantes"]:
+        print("Error: estudiante no encontrado.")
+        return
+
+    print("Estudiante:", datos["estudiantes"][estudiante]["nombre"])
+
+    encontrados = 0
+
+    for inscripcion in datos["inscripciones"]:
+        if inscripcion["estudiante"] == estudiante:
+            codigo = inscripcion["curso"]
+            curso = datos["cursos"].get(codigo)
+
+            if curso:
+                print(codigo, "-", curso["nombre"])
+                encontrados += 1
+
+    if encontrados == 0:
+        print("No tiene cursos inscritos.")
 
 
-def main():
-    sistema = SistemaCursos()
+def consultar_estudiantes_curso():
+    datos = cargar_datos()
 
-    while True:
-        print("\n========================================")
-        print("      GESTION DE CURSOS E INSCRIPCIONES ")
-        print("========================================")
-        print("1. Registrar curso (Asignar profesor)")
-        print("2. Inscribir estudiante en curso")
-        print("3. Consultar cursos de un estudiante")
-        print("4. Consultar estudiantes inscritos en un curso")
-        print("5. Salir")
+    print("\n--- ESTUDIANTES DE UN CURSO ---")
 
-        opcion = input("\nSeleccione una opcion (1-5): ").strip()
+    curso = input("Código del curso: ").strip().upper()
 
-        if opcion == "1":
-            print("\n--- Registrar Curso ---")
-            cod_curso = pedir_codigo("Ingrese el codigo del curso (solo numeros): ")
-            nom_curso = pedir_texto("Ingrese el nombre del curso (solo letras): ")
-            cod_prof = pedir_codigo("Ingrese el codigo numerico del profesor responsable: ")
-            print(sistema.registrar_curso(cod_curso, nom_curso, cod_prof))
-            pausar()
+    if curso not in datos["cursos"]:
+        print("Error: curso no encontrado.")
+        return
 
-        elif opcion == "2":
-            print("\n--- Inscribir Estudiante en Curso ---")
-            cod_est = pedir_codigo("Ingrese el codigo del estudiante: ")
-            cod_cur = pedir_codigo("Ingrese el codigo del curso: ")
-            print(sistema.inscribir_estudiante(cod_est, cod_cur))
-            pausar()
+    print("Curso:", datos["cursos"][curso]["nombre"])
 
-        elif opcion == "3":
-            print("\n--- Consultar Cursos de Estudiante ---")
-            cod_est = pedir_codigo("Ingrese el codigo del estudiante: ")
-            print(sistema.consultar_cursos_de_estudiante(cod_est))
-            pausar()
+    encontrados = 0
 
-        elif opcion == "4":
-            print("\n--- Consultar Estudiantes de un Curso ---")
-            cod_cur = pedir_codigo("Ingrese el codigo del curso: ")
-            print(sistema.consultar_estudiantes_de_curso(cod_cur))
-            pausar()
+    for inscripcion in datos["inscripciones"]:
+        if inscripcion["curso"] == curso:
+            codigo = inscripcion["estudiante"]
+            estudiante = datos["estudiantes"].get(codigo)
 
-        elif opcion == "5":
-            print("\nSaliendo del sistema...")
-            break
-        else:
-            print("\nOpcion no valida. Ingrese un numero del 1 al 5.")
-            pausar()
+            if estudiante:
+                print(codigo, "-", estudiante["nombre"])
+                encontrados += 1
 
-
-if __name__ == "__main__":
-    main()
+    if encontrados == 0:
+        print("No hay estudiantes inscritos.")
