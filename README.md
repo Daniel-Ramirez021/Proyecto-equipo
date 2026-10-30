@@ -1,1 +1,0 @@
-# Trabajo en equipo
