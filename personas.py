@@ -1,5 +1,5 @@
 
-from .datos import cargar_datos, guardar_datos, validar_codigo
+from datos import cargar_datos, guardar_datos, validar_codigo
 
 
 def validar_texto(texto):
